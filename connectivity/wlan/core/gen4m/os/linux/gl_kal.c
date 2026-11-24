@@ -6023,10 +6023,17 @@ int rx_thread(void *data)
 						    prQueueEntry));
 					}
 
-				    KAL_WAKE_LOCK_TIMEOUT(prGlueInfo->prAdapter,
-					prGlueInfo->rTimeoutWakeLock,
-					MSEC_TO_JIFFIES(prGlueInfo->prAdapter
-					->rWifiVar.u4WakeLockRxTimeout));
+				    /* Do not arm the timeout wake lock while the
+				     * system is suspending: __pm_wakeup_event()
+				     * then only bumps combined_event_count and
+				     * pm_wakeup_pending() aborts the suspend.
+				     */
+				    if (!prGlueInfo->fgIsInSuspendMode)
+					KAL_WAKE_LOCK_TIMEOUT(
+					    prGlueInfo->prAdapter,
+					    prGlueInfo->rTimeoutWakeLock,
+					    MSEC_TO_JIFFIES(prGlueInfo->prAdapter
+					    ->rWifiVar.u4WakeLockRxTimeout));
 				}
 			}
 #if CFG_SUPPORT_RX_GRO
@@ -7303,9 +7310,14 @@ void kalSetTxEvent2Hif(struct GLUE_INFO *pr)
 	if (!pr->hif_thread)
 		return;
 
-	KAL_WAKE_LOCK_TIMEOUT(pr->prAdapter, pr->rTimeoutWakeLock,
-			      MSEC_TO_JIFFIES(
-			      pr->prAdapter->rWifiVar.u4WakeLockThreadWakeup));
+	/* Same as the rx_thread() drain above: inside the suspend window
+	 * the event would abort the suspend, and the queued TX work is
+	 * still processed after resume.
+	 */
+	if (!pr->fgIsInSuspendMode)
+		KAL_WAKE_LOCK_TIMEOUT(pr->prAdapter, pr->rTimeoutWakeLock,
+				      MSEC_TO_JIFFIES(
+				      pr->prAdapter->rWifiVar.u4WakeLockThreadWakeup));
 
 	set_bit(GLUE_FLAG_HIF_TX_BIT, &pr->ulFlag);
 

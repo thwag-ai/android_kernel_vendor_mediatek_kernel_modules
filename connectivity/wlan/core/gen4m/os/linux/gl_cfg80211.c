@@ -8500,6 +8500,10 @@ int mtk_cfg_suspend(struct wiphy *wiphy,
 		return 0;
 	}
 
+	/* dash: drop the WLAN timer wakeup source before the transition */
+	if (prGlueInfo->prAdapter)
+		cnmTimerReleaseWakeLock(prGlueInfo->prAdapter);
+
 #if CFG_CHIP_RESET_SUPPORT && !CFG_WMT_RESET_API_SUPPORT
 
 	/* Before cfg80211 suspend, we must make sure L0.5 is either

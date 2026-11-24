@@ -196,6 +196,8 @@ void cnmTimerInitialize(struct ADAPTER *prAdapter);
 
 void cnmTimerDestroy(struct ADAPTER *prAdapter);
 
+void cnmTimerReleaseWakeLock(struct ADAPTER *prAdapter);
+
 void cnmTimerInitTimerOption(struct ADAPTER *prAdapter,
 			     struct TIMER *prTimer,
 			     PFN_MGMT_TIMEOUT_FUNC pfFunc,

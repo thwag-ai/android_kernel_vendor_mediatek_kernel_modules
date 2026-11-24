@@ -5162,6 +5162,18 @@ kalIoctl(struct GLUE_INFO *prGlueInfo,
  *
  * Return: return code by kalOidComplete()
  */
+/*
+ * dash: is the kernel inside a system suspend transition?
+ *
+ * Used by the timer code to avoid arming a wakeup source from inside
+ * suspend, which aborts s2idle with
+ *   Abort: Pending Wakeup Sources: WLAN Timer
+ */
+u_int8_t kalIsSystemSuspending(void)
+{
+	return (pm_suspend_target_state != PM_SUSPEND_ON) ? TRUE : FALSE;
+}
+
 uint32_t
 kalIoctlByBssIdx(struct GLUE_INFO *prGlueInfo,
 	 PFN_OID_HANDLER_FUNC pfnOidHandler,

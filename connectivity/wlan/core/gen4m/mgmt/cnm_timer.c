@@ -182,7 +182,15 @@ static u_int8_t cnmTimerSetTimer(struct ADAPTER *prAdapter,
 		&& (eType == TIMER_WAKELOCK_AUTO))) {
 		fgNeedWakeLock = TRUE;
 
-		if (!prRootTimer->fgWakeLocked) {
+		/*
+		 * dash: never arm the timer wakeup source from inside a system
+		 * suspend transition. Doing so aborts s2idle with
+		 * "Abort: Pending Wakeup Sources: WLAN Timer"; during the
+		 * transition there is nothing left to keep awake.
+		 */
+		if (kalIsSystemSuspending()) {
+			fgNeedWakeLock = FALSE;
+		} else if (!prRootTimer->fgWakeLocked) {
 			KAL_WAKE_LOCK(prAdapter, prRootTimer->rWakeLock);
 			prRootTimer->fgWakeLocked = TRUE;
 		}
@@ -252,6 +260,30 @@ void cnmTimerInitialize(struct ADAPTER *prAdapter)
  * \return (none)
  */
 /*----------------------------------------------------------------------------*/
+/*
+ * dash: release the root timer wakeup source ahead of a suspend transition.
+ *
+ * The lock can be held from a timer that was armed while the system was still
+ * running; the guard in cnmTimerSetTimer() only stops new acquisitions.
+ */
+void cnmTimerReleaseWakeLock(struct ADAPTER *prAdapter)
+{
+	struct ROOT_TIMER *prRootTimer;
+	KAL_SPIN_LOCK_DECLARATION();
+
+	if (!prAdapter)
+		return;
+
+	prRootTimer = &prAdapter->rRootTimer;
+
+	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TIMER);
+	if (prRootTimer->fgWakeLocked) {
+		KAL_WAKE_UNLOCK(prAdapter, prRootTimer->rWakeLock);
+		prRootTimer->fgWakeLocked = FALSE;
+	}
+	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TIMER);
+}
+
 void cnmTimerDestroy(struct ADAPTER *prAdapter)
 {
 	struct ROOT_TIMER *prRootTimer;

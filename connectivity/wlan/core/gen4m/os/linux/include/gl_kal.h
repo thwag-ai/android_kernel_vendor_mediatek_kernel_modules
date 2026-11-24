@@ -1976,6 +1976,8 @@ kalIoctl(struct GLUE_INFO *prGlueInfo,
 	 void *pvInfoBuf, uint32_t u4InfoBufLen,
 	 uint32_t *pu4QryInfoLen);
 
+u_int8_t kalIsSystemSuspending(void);
+
 uint32_t
 kalIoctlByBssIdx(struct GLUE_INFO *prGlueInfo,
 	PFN_OID_HANDLER_FUNC pfnOidHandler,

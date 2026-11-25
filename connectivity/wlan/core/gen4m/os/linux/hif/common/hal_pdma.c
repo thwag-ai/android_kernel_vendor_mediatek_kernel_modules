@@ -5359,7 +5359,9 @@ void halRxWork(struct GLUE_INFO *prGlueInfo)
 	if (KAL_TEST_AND_CLEAR_BIT(
 		    HIF_NAPI_SET_DRV_OWN_BIT, prNapiDev->ulFlag)) {
 #if CFG_ENABLE_WAKE_LOCK && CFG_SUPPORT_RX_WORK
-		if (!KAL_WAKE_LOCK_ACTIVE(prAdapter, prGlueInfo->rRxWorkerLock))
+		/* dash: do not arm a wakeup source from inside a suspend transition */
+		if (!kalIsSystemSuspending() &&
+		    !KAL_WAKE_LOCK_ACTIVE(prAdapter, prGlueInfo->rRxWorkerLock))
 			KAL_WAKE_LOCK(prAdapter, prGlueInfo->rRxWorkerLock);
 #endif
 		ACQUIRE_POWER_CONTROL_FROM_PM(prAdapter);

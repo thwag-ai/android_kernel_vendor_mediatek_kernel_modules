@@ -5727,7 +5727,9 @@ int hif_thread(void *data)
 
 	KAL_WAKE_LOCK_INIT(prGlueInfo->prAdapter,
 			   prHifThreadWakeLock, "WLAN hif_thread");
-	KAL_WAKE_LOCK(prGlueInfo->prAdapter, prHifThreadWakeLock);
+	/* dash: do not arm a wakeup source from inside a suspend transition */
+	if (!kalIsSystemSuspending())
+		KAL_WAKE_LOCK(prGlueInfo->prAdapter, prHifThreadWakeLock);
 #endif
 
 	DBGLOG(INIT, INFO, "%s:%u starts running...\n",
@@ -5785,7 +5787,8 @@ int hif_thread(void *data)
 			RX_INC_HIF_CNT(prRxCtrl, HIF_FLAG_HIF_TX_CMD);
 
 #if CFG_ENABLE_WAKE_LOCK
-		if (!KAL_WAKE_LOCK_ACTIVE(prGlueInfo->prAdapter,
+		if (!kalIsSystemSuspending() &&
+		    !KAL_WAKE_LOCK_ACTIVE(prGlueInfo->prAdapter,
 					  prHifThreadWakeLock))
 			KAL_WAKE_LOCK(prGlueInfo->prAdapter,
 				      prHifThreadWakeLock);
